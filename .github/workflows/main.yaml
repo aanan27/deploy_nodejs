@@ -1,4 +1,4 @@
-name: Deploy Node.js App on EKS
+name: Deploy Node.js_App on EKS
 
 on:
   push:
