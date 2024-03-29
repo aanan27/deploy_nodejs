@@ -1,4 +1,4 @@
-name: deploy_Node_js_app_on_EKS
+name: Deploy Node.js App on EKS
 
 on:
   push:
@@ -13,22 +13,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Install Terraform
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v1
-        with:
-          terraform_version: 1.1.0
-
-      # Initialize Terraform
-      - name: Terraform Init
-        run: terraform init
-        working-directory: terraform/
-
-      # Apply Terraform configuration to provision EKS cluster
-      - name: Terraform Apply
-        run: terraform apply -auto-approve
-        working-directory: terraform/
-
       - name: Install kubectl
         uses: azure/setup-kubectl@v2.0
         with:
@@ -36,11 +20,11 @@ jobs:
         id: install
 
       - name: Configure AWS Credentials
-        run: aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID && aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY && aws configure set region us-east-1
-        env:
-           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
       - name: Login to Amazon ECR
         id: login-ecr
@@ -55,11 +39,9 @@ jobs:
           docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
           docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
 
-      # Update kube config after EKS cluster is provisioned
       - name: Update kube config
         run: aws eks update-kubeconfig --name anan-eks 
-
-      # Apply deployment YAML files
+    
       - name: Deploy to EKS
         run: |
           kubectl apply -f deploy.yml
